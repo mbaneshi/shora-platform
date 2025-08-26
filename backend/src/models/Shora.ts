@@ -1,8 +1,40 @@
-const mongoose = require('mongoose');
+import mongoose, { Document, Schema, Model } from 'mongoose';
+import { 
+  Shora as ShoraInterface, 
+  ShoraType, 
+  ShoraStatus, 
+  RepresentativeRole, 
+  RepresentativePosition, 
+  VotingMethod, 
+  MeetingFrequency,
+  ShoraTerm,
+  ShoraStructure,
+  ShoraRepresentative,
+  ShoraCommission,
+  ShoraMeeting,
+  ShoraPolicies,
+  Contact,
+  Metadata
+} from '../types';
 
-const shoraSchema = new mongoose.Schema({
+export interface ShoraDocument extends ShoraInterface, Document {
+  isCurrentTerm: boolean;
+  activeRepresentativesCount: number;
+  mainRepresentatives: ShoraRepresentative[];
+  alternateRepresentatives: ShoraRepresentative[];
+  getBasicInfo(): Partial<ShoraInterface>;
+  isRepresentative(userId: string): boolean;
+  getUserRole(userId: string): RepresentativeRole | null;
+}
+
+export interface ShoraModel extends Model<ShoraDocument> {
+  findActive(): Promise<ShoraDocument[]>;
+  findByPlace(placeId: string): Promise<ShoraDocument | null>;
+}
+
+const shoraSchema = new Schema<ShoraDocument>({
   place: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'Place',
     required: true,
     unique: true
@@ -19,12 +51,12 @@ const shoraSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['main', 'branch', 'special'],
+    enum: ['main', 'branch', 'special'] as ShoraType[],
     default: 'main'
   },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'suspended', 'election'],
+    enum: ['active', 'inactive', 'suspended', 'election'] as ShoraStatus[],
     default: 'active'
   },
   term: {
@@ -66,18 +98,18 @@ const shoraSchema = new mongoose.Schema({
   },
   representatives: [{
     user: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: true
     },
     role: {
       type: String,
-      enum: ['chairman', 'vice-chairman', 'secretary', 'member', 'alternate'],
+      enum: ['chairman', 'vice-chairman', 'secretary', 'member', 'alternate'] as RepresentativeRole[],
       default: 'member'
     },
     position: {
       type: String,
-      enum: ['main', 'alternate'],
+      enum: ['main', 'alternate'] as RepresentativePosition[],
       required: true
     },
     startDate: {
@@ -96,7 +128,7 @@ const shoraSchema = new mongoose.Schema({
   }],
   commissions: [{
     commission: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Commission'
     },
     status: {
@@ -122,11 +154,11 @@ const shoraSchema = new mongoose.Schema({
     },
     agenda: [String],
     decisions: [{
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Decision'
     }],
     attendees: [{
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User'
     }],
     minutes: String,
@@ -142,12 +174,12 @@ const shoraSchema = new mongoose.Schema({
     },
     votingMethod: {
       type: String,
-      enum: ['majority', 'unanimous', 'two-thirds'],
+      enum: ['majority', 'unanimous', 'two-thirds'] as VotingMethod[],
       default: 'majority'
     },
     meetingFrequency: {
       type: String,
-      enum: ['weekly', 'bi-weekly', 'monthly', 'quarterly'],
+      enum: ['weekly', 'bi-weekly', 'monthly', 'quarterly'] as MeetingFrequency[],
       default: 'monthly'
     }
   },
@@ -168,11 +200,11 @@ const shoraSchema = new mongoose.Schema({
       default: Date.now
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User'
     },
     updatedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User'
     }
   }
@@ -188,25 +220,25 @@ shoraSchema.index({ status: 1 });
 shoraSchema.index({ 'term.startDate': 1, 'term.endDate': 1 });
 
 // Virtual for current term status
-shoraSchema.virtual('isCurrentTerm').get(function() {
+shoraSchema.virtual('isCurrentTerm').get(function(this: ShoraDocument): boolean {
   const now = new Date();
   return now >= this.term.startDate && now <= this.term.endDate;
 });
 
 // Virtual for active representatives count
-shoraSchema.virtual('activeRepresentativesCount').get(function() {
+shoraSchema.virtual('activeRepresentativesCount').get(function(this: ShoraDocument): number {
   return this.representatives.filter(rep => rep.isActive).length;
 });
 
 // Virtual for main representatives
-shoraSchema.virtual('mainRepresentatives').get(function() {
+shoraSchema.virtual('mainRepresentatives').get(function(this: ShoraDocument): ShoraRepresentative[] {
   return this.representatives.filter(rep => 
     rep.position === 'main' && rep.isActive
   );
 });
 
 // Virtual for alternate representatives
-shoraSchema.virtual('alternateRepresentatives').get(function() {
+shoraSchema.virtual('alternateRepresentatives').get(function(this: ShoraDocument): ShoraRepresentative[] {
   return this.representatives.filter(rep => 
     rep.position === 'alternate' && rep.isActive
   );
@@ -219,17 +251,17 @@ shoraSchema.pre('save', function(next) {
 });
 
 // Static method to find active shoras
-shoraSchema.statics.findActive = function() {
+shoraSchema.statics.findActive = function(): Promise<ShoraDocument[]> {
   return this.find({ status: 'active' });
 };
 
 // Static method to find shoras by place
-shoraSchema.statics.findByPlace = function(placeId) {
+shoraSchema.statics.findByPlace = function(placeId: string): Promise<ShoraDocument | null> {
   return this.findOne({ place: placeId, status: 'active' });
 };
 
 // Instance method to get basic info
-shoraSchema.methods.getBasicInfo = function() {
+shoraSchema.methods.getBasicInfo = function(): Partial<ShoraInterface> {
   return {
     id: this._id,
     name: this.name,
@@ -243,18 +275,18 @@ shoraSchema.methods.getBasicInfo = function() {
 };
 
 // Instance method to check if user is representative
-shoraSchema.methods.isRepresentative = function(userId) {
+shoraSchema.methods.isRepresentative = function(userId: string): boolean {
   return this.representatives.some(rep => 
     rep.user.toString() === userId.toString() && rep.isActive
   );
 };
 
 // Instance method to get user role
-shoraSchema.methods.getUserRole = function(userId) {
+shoraSchema.methods.getUserRole = function(userId: string): RepresentativeRole | null {
   const rep = this.representatives.find(rep => 
     rep.user.toString() === userId.toString() && rep.isActive
   );
   return rep ? rep.role : null;
 };
 
-module.exports = mongoose.model('Shora', shoraSchema);
+export const Shora = mongoose.model<ShoraDocument, ShoraModel>('Shora', shoraSchema);

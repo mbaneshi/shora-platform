@@ -1,7 +1,35 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import mongoose, { Document, Schema, Model } from 'mongoose';
+import bcrypt from 'bcryptjs';
+import { 
+  User as UserInterface, 
+  UserRole, 
+  UserPermission, 
+  UserStatus, 
+  UserGender,
+  UserAddress,
+  UserProfile,
+  UserVerification,
+  Metadata
+} from '../types';
 
-const userSchema = new mongoose.Schema({
+export interface UserDocument extends UserInterface, Document {
+  fullName: string;
+  fullNamePersian: string;
+  isLocked: boolean;
+  comparePassword(candidatePassword: string): Promise<boolean>;
+  incLoginAttempts(): Promise<any>;
+  resetLoginAttempts(): Promise<any>;
+  getBasicInfo(): Partial<UserInterface>;
+  hasPermission(permission: UserPermission): boolean;
+  hasRole(role: UserRole): boolean;
+}
+
+export interface UserModel extends Model<UserDocument> {
+  findActive(): Promise<UserDocument[]>;
+  findByRole(role: UserRole): Promise<UserDocument[]>;
+}
+
+const userSchema = new Schema<UserDocument>({
   username: {
     type: String,
     required: true,
@@ -64,7 +92,7 @@ const userSchema = new mongoose.Schema({
   },
   gender: {
     type: String,
-    enum: ['male', 'female', 'other'],
+    enum: ['male', 'female', 'other'] as UserGender[],
     default: 'male'
   },
   address: {
@@ -96,16 +124,16 @@ const userSchema = new mongoose.Schema({
   },
   roles: [{
     type: String,
-    enum: ['user', 'representative', 'admin', 'super-admin'],
+    enum: ['user', 'representative', 'admin', 'super-admin'] as UserRole[],
     default: 'user'
   }],
   permissions: [{
     type: String,
-    enum: ['read', 'write', 'delete', 'approve', 'vote', 'manage', 'super']
+    enum: ['read', 'write', 'delete', 'approve', 'vote', 'manage', 'super'] as UserPermission[]
   }],
   status: {
     type: String,
-    enum: ['active', 'inactive', 'suspended', 'pending'],
+    enum: ['active', 'inactive', 'suspended', 'pending'] as UserStatus[],
     default: 'pending'
   },
   verification: {
@@ -146,11 +174,11 @@ const userSchema = new mongoose.Schema({
       default: Date.now
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User'
     },
     updatedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User'
     }
   }
@@ -168,17 +196,17 @@ userSchema.index({ status: 1 });
 userSchema.index({ roles: 1 });
 
 // Virtual for full name
-userSchema.virtual('fullName').get(function() {
+userSchema.virtual('fullName').get(function(this: UserDocument): string {
   return `${this.firstName} ${this.lastName}`;
 });
 
 // Virtual for full name in Persian
-userSchema.virtual('fullNamePersian').get(function() {
+userSchema.virtual('fullNamePersian').get(function(this: UserDocument): string {
   return `${this.firstNamePersian} ${this.lastNamePersian}`;
 });
 
 // Virtual for is locked
-userSchema.virtual('isLocked').get(function() {
+userSchema.virtual('isLocked').get(function(this: UserDocument): boolean {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
@@ -192,7 +220,7 @@ userSchema.pre('save', async function(next) {
     this.metadata.updatedAt = new Date();
     next();
   } catch (error) {
-    next(error);
+    next(error as Error);
   }
 });
 
@@ -203,12 +231,12 @@ userSchema.pre('save', function(next) {
 });
 
 // Instance method to compare password
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
 // Instance method to increment login attempts
-userSchema.methods.incLoginAttempts = function() {
+userSchema.methods.incLoginAttempts = function(): Promise<any> {
   if (this.lockUntil && this.lockUntil < Date.now()) {
     return this.updateOne({
       $unset: { lockUntil: 1 },
@@ -216,7 +244,7 @@ userSchema.methods.incLoginAttempts = function() {
     });
   }
   
-  const updates = { $inc: { loginAttempts: 1 } };
+  const updates: any = { $inc: { loginAttempts: 1 } };
   if (this.loginAttempts + 1 >= 5 && !this.isLocked) {
     updates.$set = { lockUntil: Date.now() + 2 * 60 * 60 * 1000 }; // 2 hours
   }
@@ -225,24 +253,24 @@ userSchema.methods.incLoginAttempts = function() {
 };
 
 // Instance method to reset login attempts
-userSchema.methods.resetLoginAttempts = function() {
+userSchema.methods.resetLoginAttempts = function(): Promise<any> {
   return this.updateOne({
     $unset: { loginAttempts: 1, lockUntil: 1 }
   });
 };
 
 // Static method to find active users
-userSchema.statics.findActive = function() {
+userSchema.statics.findActive = function(): Promise<UserDocument[]> {
   return this.find({ status: 'active' });
 };
 
 // Static method to find by role
-userSchema.statics.findByRole = function(role) {
+userSchema.statics.findByRole = function(role: UserRole): Promise<UserDocument[]> {
   return this.find({ roles: role, status: 'active' });
 };
 
 // Instance method to get basic info
-userSchema.methods.getBasicInfo = function() {
+userSchema.methods.getBasicInfo = function(): Partial<UserInterface> {
   return {
     id: this._id,
     username: this.username,
@@ -258,13 +286,13 @@ userSchema.methods.getBasicInfo = function() {
 };
 
 // Instance method to check permission
-userSchema.methods.hasPermission = function(permission) {
+userSchema.methods.hasPermission = function(permission: UserPermission): boolean {
   return this.permissions.includes(permission) || this.roles.includes('super-admin');
 };
 
 // Instance method to check role
-userSchema.methods.hasRole = function(role) {
+userSchema.methods.hasRole = function(role: UserRole): boolean {
   return this.roles.includes(role);
 };
 
-module.exports = mongoose.model('User', userSchema);
+export const User = mongoose.model<UserDocument, UserModel>('User', userSchema);

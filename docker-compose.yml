@@ -1,0 +1,92 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: shora-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: shora
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    ports:
+      - "27017:27017"
+    networks:
+      - shora-network
+
+  # Backend API Server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: shora-backend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${PORT:-3000}
+      - MONGODB_URI=${MONGODB_URI:-mongodb://mongodb:27017/shora}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - UPLOAD_PATH=${UPLOAD_PATH:-./uploads}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-10485760}
+      - SOCKET_CORS_ORIGIN=${SOCKET_CORS_ORIGIN:-http://localhost:3001}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    depends_on:
+      - mongodb
+    networks:
+      - shora-network
+    command: npm run dev
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: shora-frontend
+    restart: unless-stopped
+    environment:
+      - REACT_APP_API_URL=${API_URL:-http://localhost:3000}
+      - REACT_APP_SOCKET_URL=${API_URL:-http://localhost:3000}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "${FRONTEND_PORT:-3001}:${FRONTEND_PORT:-3001}"
+    depends_on:
+      - backend
+    networks:
+      - shora-network
+    command: npm start
+
+  # Caddy Reverse Proxy
+  caddy:
+    image: caddy:2.7-alpine
+    container_name: shora-caddy
+    restart: unless-stopped
+    ports:
+      - "${CADDY_PORT:-80}:80"
+      - "${CADDY_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/ssl:/etc/caddy/ssl
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - shora-network
+
+volumes:
+  mongodb_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  shora-network:
+    driver: bridge

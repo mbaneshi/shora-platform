@@ -1,0 +1,80 @@
+# Shora Platform Caddy Configuration
+
+# Development environment
+:80 {
+    # API Backend
+    handle /api/* {
+        reverse_proxy backend:3000
+        header {
+            Access-Control-Allow-Origin *
+            Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+            Access-Control-Allow-Headers "Content-Type, Authorization"
+        }
+    }
+
+    # WebSocket support for real-time features
+    handle /socket.io/* {
+        reverse_proxy backend:3000
+        header {
+            Access-Control-Allow-Origin *
+            Access-Control-Allow-Methods "GET, POST, OPTIONS"
+            Access-Control-Allow-Headers "Content-Type, Authorization"
+        }
+    }
+
+    # Frontend React App
+    handle /* {
+        reverse_proxy frontend:3001
+        header {
+            Access-Control-Allow-Origin *
+        }
+    }
+
+    # Logging
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}
+
+# Production HTTPS (uncomment when deploying)
+# shora.edcopo.info {
+#     # API Backend
+#     handle /api/* {
+#         reverse_proxy backend:3000
+#         header {
+#             Access-Control-Allow-Origin https://shora.shahab.xyz
+#             Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+#             Access-Control-Allow-Headers "Content-Type, Authorization"
+#         }
+#     }
+#
+#     # WebSocket support
+#     handle /socket.io/* {
+#         reverse_proxy backend:3000
+#         header {
+#             Access-Control-Allow-Origin https://shora.shahab.xyz
+#             Access-Control-Allow-Methods "GET, POST, OPTIONS"
+#             Access-Control-Allow-Headers "Content-Type, Authorization"
+#         }
+#     }
+#
+#     # Frontend
+#     handle /* {
+#         reverse_proxy frontend:3001
+#         header {
+#             Access-Control-Allow-Origin https://shora.shahab.xyz
+#         }
+#     }
+#
+#     # Automatic HTTPS
+#     tls internal
+#
+#     # Logging
+#     log {
+#         output stdout
+#         format console
+#         level INFO
+#     }
+# }

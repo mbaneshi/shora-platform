@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   UsersIcon, 
   UserGroupIcon, 
@@ -11,39 +11,49 @@ import {
 } from '@heroicons/react/24/outline';
 
 const Dashboard: React.FC = () => {
+  const [language, setLanguage] = useState<'persian' | 'english'>('persian');
+  
   // Mock data for demonstration
   const stats = [
     {
       name: 'Total Representatives',
+      namePersian: 'کل نمایندگان',
       value: '7',
       change: '+2',
       changeType: 'increase',
       icon: UsersIcon,
-      description: '5 main + 2 alternate'
+      description: '5 main + 2 alternate',
+      descriptionPersian: '۵ اصلی + ۲ جانشین'
     },
     {
       name: 'Active Commissions',
+      namePersian: 'کمیسیون‌های فعال',
       value: '4',
       change: '+1',
       changeType: 'increase',
       icon: UserGroupIcon,
-      description: 'Working groups'
+      description: 'Working groups',
+      descriptionPersian: 'گروه‌های کاری'
     },
     {
       name: 'Recent Decisions',
+      namePersian: 'تصمیمات اخیر',
       value: '12',
       change: '+3',
       changeType: 'increase',
       icon: DocumentTextIcon,
-      description: 'This month'
+      description: 'This month',
+      descriptionPersian: 'این ماه'
     },
     {
       name: 'Documents',
+      namePersian: 'اسناد',
       value: '45',
       change: '+8',
       changeType: 'increase',
       icon: FolderIcon,
-      description: 'Total files'
+      description: 'Total files',
+      descriptionPersian: 'کل فایل‌ها'
     }
   ];
 
@@ -104,10 +114,27 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="border-b border-gray-200 pb-5">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          Welcome to the Shora Platform for Baneshi city. Here's an overview of current activities and statistics.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {language === 'persian' ? 'داشبورد' : 'Dashboard'}
+            </h1>
+            <p className="mt-2 text-sm text-gray-600">
+              {language === 'persian' 
+                ? 'به پلتفرم شورا برای شهر بانشی خوش آمدید. اینجا نمای کلی از فعالیت‌های فعلی و آمار است.'
+                : 'Welcome to the Shora Platform for Baneshi city. Here\'s an overview of current activities and statistics.'
+              }
+            </p>
+          </div>
+          <button
+            onClick={() => setLanguage(language === 'persian' ? 'english' : 'persian')}
+            className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors border border-gray-300"
+          >
+            <span className="mr-2">
+              {language === 'persian' ? '🇺🇸 English' : '🇮🇷 فارسی'}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -119,12 +146,16 @@ const Dashboard: React.FC = () => {
                 <stat.icon className="h-8 w-8 text-primary-600" />
               </div>
               <div className="ml-4 w-0 flex-1">
-                <p className="text-sm font-medium text-gray-500">{stat.name}</p>
+                <p className="text-sm font-medium text-gray-500">
+                  {language === 'persian' ? stat.namePersian : stat.name}
+                </p>
                 <div className="flex items-baseline">
                   <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
                   <p className="ml-2 text-sm font-medium text-success-600">{stat.change}</p>
                 </div>
-                <p className="text-sm text-gray-500">{stat.description}</p>
+                <p className="text-sm text-gray-500">
+                  {language === 'persian' ? stat.descriptionPersian : stat.description}
+                </p>
               </div>
             </div>
           </div>

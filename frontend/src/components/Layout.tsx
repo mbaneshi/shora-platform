@@ -14,14 +14,40 @@ import {
 
 const Layout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [language, setLanguage] = useState<'persian' | 'english'>('persian');
   const location = useLocation();
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: HomeIcon },
-    { name: 'Representatives', href: '/representatives', icon: UsersIcon },
-    { name: 'Commissions', href: '/commissions', icon: UserGroupIcon },
-    { name: 'Decisions', href: '/decisions', icon: DocumentTextIcon },
-    { name: 'Documents', href: '/documents', icon: FolderIcon },
+    { 
+      name: 'Dashboard', 
+      namePersian: 'داشبورد',
+      href: '/', 
+      icon: HomeIcon 
+    },
+    { 
+      name: 'Representatives', 
+      namePersian: 'نمایندگان',
+      href: '/representatives', 
+      icon: UsersIcon 
+    },
+    { 
+      name: 'Commissions', 
+      namePersian: 'کمیسیون‌ها',
+      href: '/commissions', 
+      icon: UserGroupIcon 
+    },
+    { 
+      name: 'Decisions', 
+      namePersian: 'تصمیمات',
+      href: '/decisions', 
+      icon: DocumentTextIcon 
+    },
+    { 
+      name: 'Documents', 
+      namePersian: 'اسناد',
+      href: '/documents', 
+      icon: FolderIcon 
+    },
   ];
 
   const isActive = (href: string) => {
@@ -32,7 +58,7 @@ const Layout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${language === 'persian' ? 'rtl' : 'ltr'}`}>
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
@@ -68,7 +94,7 @@ const Layout: React.FC = () => {
                     isActive(item.href) ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
                   }`}
                 />
-                {item.name}
+                {language === 'persian' ? item.namePersian : item.name}
               </Link>
             ))}
           </nav>
@@ -82,7 +108,9 @@ const Layout: React.FC = () => {
             <div className="h-8 w-8 bg-primary-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">ش</span>
             </div>
-            <span className="ml-3 text-xl font-semibold text-gray-900">Shora Platform</span>
+                            <span className="ml-3 text-xl font-semibold text-gray-900">
+                  {language === 'persian' ? 'پلتفرم شورا' : 'Shora Platform'}
+                </span>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => (
@@ -100,7 +128,7 @@ const Layout: React.FC = () => {
                     isActive(item.href) ? 'text-primary-500' : 'text-gray-400 group-hover:text-gray-500'
                   }`}
                 />
-                {item.name}
+                {language === 'persian' ? item.namePersian : item.name}
               </Link>
             ))}
           </nav>
@@ -122,6 +150,16 @@ const Layout: React.FC = () => {
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex flex-1"></div>
             <div className="flex items-center gap-x-4 lg:gap-x-6">
+              {/* Language Switcher */}
+              <button
+                onClick={() => setLanguage(language === 'persian' ? 'english' : 'persian')}
+                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+              >
+                <span className="mr-2">
+                  {language === 'persian' ? '🇺🇸 EN' : '🇮🇷 فارسی'}
+                </span>
+              </button>
+
               {/* Notifications */}
               <button className="p-2 text-gray-400 hover:text-gray-500">
                 <BellIcon className="h-6 w-6" />

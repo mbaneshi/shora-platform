@@ -214,3 +214,54 @@ body {
     display: none;
   }
 }
+
+/* RTL Layout Support */
+.rtl {
+  direction: rtl;
+  text-align: right;
+}
+
+.ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+/* RTL specific utilities */
+.rtl .ml-4 { margin-left: 0 !important; margin-right: 1rem !important; }
+.rtl .mr-3 { margin-right: 0 !important; margin-left: 0.75rem !important; }
+.rtl .mr-1 { margin-right: 0 !important; margin-left: 0.25rem !important; }
+.rtl .ml-3 { margin-left: 0 !important; margin-right: 0.75rem !important; }
+
+/* RTL navigation adjustments */
+.rtl .sidebar-nav {
+  right: 0;
+  left: auto;
+}
+
+.rtl .main-content {
+  margin-right: 16rem;
+  margin-left: 0;
+}
+
+/* RTL form elements */
+.rtl input, .rtl textarea, .rtl select {
+  text-align: right;
+}
+
+/* RTL button icons */
+.rtl .btn-icon-left {
+  flex-direction: row-reverse;
+}
+
+/* RTL table */
+.rtl table th,
+.rtl table td {
+  text-align: right;
+}
+
+/* RTL dropdown */
+.rtl .dropdown-menu {
+  right: 0;
+  left: auto;
+  text-align: right;
+}
